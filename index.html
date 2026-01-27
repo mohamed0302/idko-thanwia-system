@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بوابة ولي الأمر — عرض الدرجات والغياب</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --primary:#0b6ef6;
+      --muted:#6b7280;
+      --accent:#e9f5ff;
+      --danger:#d9534f;
+      --radius:12px;
+      --gap:14px;
+      font-size:16px;
+    }
+
+    /* Reset & base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      padding:20px;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, "Noto Naskh Arabic", sans-serif;
+      background:var(--bg);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+    }
+
+    /* Page wrapper */
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      width:100%;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 8px 28px rgba(16,24,40,0.06);
+    }
+
+    header.head{
+      display:flex;
+      gap:var(--gap);
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:18px;
+    }
+
+    header .title{
+      font-size:1.15rem;
+      font-weight:700;
+      color:var(--primary);
+      line-height:1.2;
+    }
+
+    /* Search area */
+    .search-row{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    input[type="text"].student-code{
+      width:100%;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid #e6e9ef;
+      font-size:1rem;
+      text-align:center;
+    }
+    input.student-code:focus{outline:3px solid rgba(11,110,246,0.12);border-color:var(--primary)}
+
+    .btn{
+      padding:11px 16px;
+      border-radius:10px;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+      font-size:0.98rem;
+    }
+    .btn-primary{background:var(--primary);color:white}
+    .btn-ghost{background:transparent;border:1px solid #e6e9ef;color:var(--primary)}
+
+    .status{margin-bottom:12px;text-align:center;font-weight:600}
+
+    /* layout for student + tabs */
+    .main-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:var(--gap);
+      margin-top:10px;
+    }
+
+    .student-meta{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .student-meta .left{
+      display:flex;gap:12px;align-items:center
+    }
+
+    .avatar{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(180deg,#e6f0ff,#fff);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary);
+    }
+
+    .meta-text h2{margin:0;font-size:1rem}
+    .meta-text p{margin:0;color:var(--muted);font-size:0.95rem}
+
+    /* tabs */
+    .tabs{
+      display:flex;gap:8px;flex-wrap:wrap;margin-top:12px
+    }
+    .tab-btn{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid transparent;cursor:pointer}
+    .tab-btn.active{background:var(--primary);color:white}
+
+    /* content panels */
+    .panel{display:none;margin-top:12px}
+    .panel.active{display:block}
+
+    .list-item{
+      background:#fbfdff;
+      border-radius:10px;
+      padding:14px;
+      border-left:4px solid var(--primary);
+      margin-bottom:18px; /* زيادة المسافة بين الرسائل */
+      position:relative;
+    }
+
+    /* فاصل واضح أسفل كل رسالة */
+    .list-item::after{
+      content:"";
+      display:block;
+      width:100%;
+      height:2px;
+      background:linear-gradient(to right, transparent, #d0d7e6, transparent);
+      margin-top:14px;
+      border-radius:2px;
+    }
+    .list-item pre{white-space:pre-wrap;font-family:inherit;margin:0}
+    .timestamp{font-size:0.85rem;color:var(--muted);margin-top:8px}
+
+    /* responsive columns for larger screens */
+    @media(min-width:760px){
+      .main-grid{grid-template-columns:320px 1fr}
+      .student-meta{flex-direction:column;align-items:flex-start}
+    }
+
+    @media(min-width:1024px){
+      .wrap{max-width:1100px}
+      .card{padding:22px}
+    }
+
+    /* accessibility focus */
+    button:focus, .tab-btn:focus{outline:3px solid rgba(11,110,246,0.14)}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header class="head">
+        <div class="title">مدرسة إدكو الثانويه بنين — بوابة ولي الأمر</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="text-align:left;color:var(--muted);font-size:0.95rem">اعرف غياب ودرجات ابنتك في المدرسة من خلال كود الطالبه </div>
+          <!-- LinkedIn icon: ضع رابط صفحتك في href لإظهار صفحة المبرمج -->
+          <a id="linkedin-link" href="https://www.linkedin.com/in/mohamed-kassem-3a37b9375?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" target="_blank" rel="noopener" title="صفحة المبرمج على لينكدإن" style="display:inline-flex;align-items:center;padding:8px;border-radius:8px;border:1.8px solid blue;text-decoration:none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.98 3.5C4.98 4.88 3.86 6 2.48 6C1.1 6 0 4.88 0 3.5C0 2.12 1.12 1 2.5 1C3.88 1 4.98 2.12 4.98 3.5Z" transform="translate(3 4)" fill="#0A66C2"></path>
+              <path d="M6 8H2V20H6V8Z" transform="translate(3 3)" fill="#0A66C2"></path>
+              <path d="M10 8H7V20H10V14.5C10 12 16 11.5 16 16V20H20V14C20 8 13 7.5 10 10.5V8Z" transform="translate(1 2)" fill="#0A66C2"></path>
+            </svg>
+            <span style="font-size:0.9rem;color:var(--primary);font-weight:600;margin-right:6px">المطور : محمد إيهاب قاسم </span>
+          </a>
+        </div>
+      </header>
+
+      <div class="search-row">
+        <input type="text" class="student-code" id="student-code" placeholder="أدخل كود الطالب هنا (اضغط Enter للبحث)">
+        <button id="search-btn" class="btn btn-primary">بحث</button>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+
+      <div class="main-grid" id="results" style="display:none">
+        <aside class="card" id="left-card">
+          <div class="student-meta">
+            <div class="left">
+              <div class="avatar" id="student-avatar">S</div>
+              <div class="meta-text">
+                <h2 id="student-name">—</h2>
+                <p id="student-class">الصف — | الفصل —</p>
+              </div>
+            </div>
+            <div style="text-align:left">
+              <button id="select-all" class="btn btn-ghost" title="تحديد كل الرسائل">تحديد الكل</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px">البحث داخل الرسائل</div>
+            <input id="global-search" type="text" placeholder="ابحث عن نص داخل الرسائل" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;text-align:center">
+          </div>
+        </aside>
+
+        <section>
+          <div class="tabs" role="tablist" aria-label="أقسام الطالب">
+            <button class="tab-btn active" data-target="grades">الدرجات</button>
+            <button class="tab-btn" data-target="absence">الغياب</button>
+            <button class="tab-btn" data-target="reports">التقارير</button>
+            <button class="tab-btn" data-target="messages">رسائل عامة</button>
+          </div>
+
+          <div id="grades" class="panel active"></div>
+          <div id="absence" class="panel"></div>
+          <div id="reports" class="panel"></div>
+          <div id="messages" class="panel"></div>
+        </section>
+      </div>
+
+      <p style="margin-top:14px;color:var(--muted);font-size:0.95rem">ملاحظه : اي خطا في البيانات الرجاء الرجوء لادارة المدرسه </p>
+    </div>
+  </div>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <script>
+    // ضع إعدادات firebaseConfig هنا
+    const firebaseConfig = {
+  apiKey: "AIzaSyBtRexl58EMIFgOF_IGaA_i9qn9kyw0hpQ",
+  authDomain: "thanwia-banin.firebaseapp.com",
+  databaseURL: "https://thanwia-banin-default-rtdb.firebaseio.com",
+  projectId: "thanwia-banin",
+  storageBucket: "thanwia-banin.firebasestorage.app",
+  messagingSenderId: "264407319824",
+  appId: "1:264407319824:web:477d2fae113f7cd81bd195"
+};
+
+    // init
+    try{firebase.initializeApp(firebaseConfig);}catch(e){/* ignore if already init */}
+    const db = firebase.database ? firebase.database() : null;
+
+    // عناصر DOM
+    const searchBtn = document.getElementById('search-btn');
+    const codeInput = document.getElementById('student-code');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const nameEl = document.getElementById('student-name');
+    const classEl = document.getElementById('student-class');
+    const avatarEl = document.getElementById('student-avatar');
+    const panels = document.querySelectorAll('.panel');
+    let currentRef = null;
+
+    // تبويب
+    document.querySelectorAll('.tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        panels.forEach(p=>p.classList.remove('active'));
+        const t = document.getElementById(btn.dataset.target);
+        if(t) t.classList.add('active');
+      })
+    })
+
+    // البحث
+    function showStatus(text,color=''){
+      statusEl.textContent = text;
+      statusEl.style.color = color||'';
+    }
+
+    function clearPanels(){panels.forEach(p=>p.innerHTML='');}
+
+    function renderList(data, containerId, emptyMessage){
+      const node = document.getElementById(containerId);
+      node.innerHTML='';
+      if(!data){ node.innerHTML = `<div style='color:var(--muted)'>${emptyMessage}</div>`; return }
+      const keys = Object.keys(data).reverse();
+      keys.forEach(k=>{
+        const item = data[k];
+        const div = document.createElement('div'); div.className='list-item';
+        const pre = document.createElement('pre'); pre.textContent = item.text || item.msg || JSON.stringify(item);
+        const t = document.createElement('div'); t.className='timestamp';
+        const date = item.timestamp ? new Date(item.timestamp) : new Date();
+        t.textContent = `تاريخ الإرسال: ${date.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})}`;
+        div.appendChild(pre); div.appendChild(t); node.appendChild(div);
+      })
+    }
+
+    function attachListener(studentCode){
+      if(!db){ showStatus('Firebase غير مهيأ — أضف firebaseConfig في الكود', 'red'); return }
+      if(currentRef) currentRef.off();
+      currentRef = db.ref('students/' + studentCode);
+      showStatus('جاري تحميل البيانات...', 'black');
+      currentRef.on('value', snap=>{
+        if(!snap.exists()){ showStatus('لم يتم العثور على طالب بهذا الكود.', 'red'); resultsEl.style.display='none'; return }
+        const data = snap.val();
+        const meta = data.meta || {};
+        nameEl.textContent = meta.الاسم || '—';
+        classEl.textContent = `الصف: ${meta.الصف || '—'} | الفصل: ${meta.الفصل || '—'}`;
+        avatarEl.textContent = (meta.الاسم ? meta.الاسم.trim()[0] : 'S');
+
+        renderList(data.grades, 'grades', 'لا توجد درجات مسجلة حالياً.');
+        renderList(data.absence, 'absence', 'لا يوجد غياب مسجل حالياً.');
+        renderList(data.reports, 'reports', 'لا توجد تقارير حالياً.');
+        renderList(data.messages, 'messages', 'لا توجد رسائل عامة حالياً.');
+
+        resultsEl.style.display='grid';
+        showStatus('');
+      }, err=>{ console.error(err); showStatus('حدث خطأ أثناء الاتصال بقاعدة البيانات.', 'red') })
+    }
+
+    searchBtn.addEventListener('click', ()=>{ const code = codeInput.value.trim(); if(!code){ showStatus('الرجاء إدخال كود الطالب.', 'red'); return } attachListener(code); })
+    codeInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); searchBtn.click(); } })
+
+    // تحسينات اختيارية
+    document.getElementById('select-all').addEventListener('click', ()=>{
+      // مثال: يميز كل العناصر (يمكنك تعديل لتفعيل إرسال أو نسخ)
+      document.querySelectorAll('.list-item').forEach(it=>it.style.backgroundColor='#fff8e6');
+    })
+
+    // بحث داخل الرسائل
+    document.getElementById('global-search').addEventListener('input', (e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('.list-item').forEach(it=>{
+        const txt = it.innerText.toLowerCase();
+        it.style.display = q ? (txt.includes(q) ? 'block' : 'none') : 'block';
+      })
+    });
+
+  </script>
+</body>
+</html>

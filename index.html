@@ -173,9 +173,45 @@
       max-width: 200px;
       cursor: pointer;
       transition: transform 0.2s;
+      position: relative;
     }
     .grade-img-container:hover { transform: scale(1.02); border-color: var(--primary); }
     .grade-img-thumb { width: 100%; height: auto; display: block; }
+
+    .grade-img-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .img-hint {
+      font-size: 0.85rem;
+      color: var(--primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .quick-download-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(244, 142, 8, 0.25);
+      width: 100%;
+      margin-top: 4px;
+    }
+    .quick-download-btn:hover { background-color: rgb(213, 104, 68); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(11, 110, 246, 0.35); }
+    .quick-download-btn:active { transform: translateY(0); }
     
     /* Modal (Lightbox) */
     .modal {
@@ -203,16 +239,26 @@
     .modal-controls {
       position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
       display: flex; gap: 15px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: max-content;
+      max-width: 90%;
     }
     .modal-btn {
-      background: rgba(255,255,255,0.2); color: white; border: 1px solid white;
+      background: rgba(11, 225, 160, 0.1); color: white; border: 1px solid rgba(217, 39, 39, 0.5);
       padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;
       display: flex; align-items: center; gap: 5px; text-decoration: none;
+      white-space: nowrap;
     }
-    .modal-btn:hover { background: rgba(255,255,255,0.4); }
+    .modal-btn:hover { background: rgba(219, 87, 87, 0.3); }
 
     @media only screen and (max-width: 700px){
       .modal-content { width: 95%; max-width: 100%; }
+      .modal-controls { bottom: 10px; gap: 10px; padding: 8px 15px; }
+      .modal-btn { padding: 6px 12px; font-size: 13px; }
     }
 
   </style>
@@ -289,7 +335,7 @@
     <img class="modal-content" id="img01">
     <div id="caption" class="modal-caption"></div>
     <div class="modal-controls">
-      <a id="downloadBtn" class="modal-btn" href="#" download>⬇ تحميل الصورة</a>
+      <a id="downloadBtn" class="modal-btn" href="#" download style="background: rgba(219, 87, 87, 0.3);">⬇ تحميل الصورة</a>
       <button class="modal-btn" onclick="zoomIn()">🔍 تكبير</button>
       <button class="modal-btn" onclick="zoomOut()">➖ تصغير</button>
     </div>
@@ -374,6 +420,15 @@
             titleDiv.style.marginBottom = '5px';
             titleDiv.textContent = `📄 ${filename}`;
 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'grade-img-wrapper';
+
+            // Hint text
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'img-hint';
+            hintDiv.innerHTML = '🔍 اضغط على الصورة للتكبير';
+            hintDiv.onclick = function() { openModal(imgSrc, filename); };
+
             const imgContainer = document.createElement('div');
             imgContainer.className = 'grade-img-container';
             
@@ -386,8 +441,19 @@
             imgContainer.appendChild(imgThumb);
             imgContainer.onclick = function() { openModal(imgSrc, filename); };
 
+            // Quick Download Button
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imgSrc;
+            downloadLink.download = filename;
+            downloadLink.className = 'quick-download-btn';
+            downloadLink.innerHTML = '⬇ تحميل سريع';
+
+            wrapper.appendChild(hintDiv);
+            wrapper.appendChild(imgContainer);
+            wrapper.appendChild(downloadLink);
+
             div.appendChild(titleDiv);
-            div.appendChild(imgContainer);
+            div.appendChild(wrapper);
         } else {
             const pre = document.createElement('pre'); pre.textContent = textContent;
             div.appendChild(pre);

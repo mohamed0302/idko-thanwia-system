@@ -455,35 +455,80 @@
             div.appendChild(titleDiv);
             div.appendChild(wrapper);
         } else if (typeof textContent === 'string' && textContent.startsWith('IMG_URL:')) {
-            // روابط صور خارجية (مثل GitHub): عرض رابط مباشر قابل للضغط يفتح صورة الطالب فقط
+            // روابط صور خارجية (مثل GitHub): زر مشاهدة + زر تحميل مباشر
             const rest = textContent.slice('IMG_URL:'.length);
             const colonIdx = rest.indexOf(':');
             const displayName = rest.substring(0, colonIdx);
             const imageUrl = rest.substring(colonIdx + 1).trim();
             const titleDiv = document.createElement('div');
             titleDiv.style.fontWeight = 'bold';
-            titleDiv.style.marginBottom = '8px';
+            titleDiv.style.marginBottom = '10px';
             titleDiv.textContent = displayName ? `📄 ${displayName}` : '📷 صورة الدرجة';
-            const linkWrapper = document.createElement('div');
-            linkWrapper.className = 'grade-img-wrapper';
-            const directLink = document.createElement('a');
-            directLink.href = imageUrl;
-            directLink.target = '_blank';
-            directLink.rel = 'noopener noreferrer';
-            directLink.className = 'grade-direct-link';
-            directLink.style.display = 'inline-block';
-            directLink.style.padding = '12px 20px';
-            directLink.style.background = 'var(--primary, #0d6efd)';
-            directLink.style.color = '#fff';
-            directLink.style.borderRadius = '8px';
-            directLink.style.textDecoration = 'none';
-            directLink.style.fontWeight = 'bold';
-            directLink.style.marginBottom = '8px';
-            directLink.textContent = '🔗 اضغط هنا لمشاهدة صورتك';
-            directLink.title = 'يفتح صورة الدرجة في تبويب جديد';
-            linkWrapper.appendChild(directLink);
+            const btnWrap = document.createElement('div');
+            btnWrap.className = 'grade-img-wrapper';
+            btnWrap.style.display = 'flex';
+            btnWrap.style.gap = '12px';
+            btnWrap.style.flexWrap = 'wrap';
+            btnWrap.style.marginBottom = '8px';
+            const btnView = document.createElement('a');
+            btnView.href = imageUrl;
+            btnView.target = '_blank';
+            btnView.rel = 'noopener noreferrer';
+            btnView.className = 'grade-direct-link';
+            btnView.style.display = 'inline-block';
+            btnView.style.padding = '12px 20px';
+            btnView.style.background = 'var(--primary, #0d6efd)';
+            btnView.style.color = '#fff';
+            btnView.style.borderRadius = '8px';
+            btnView.style.textDecoration = 'none';
+            btnView.style.fontWeight = 'bold';
+            btnView.textContent = '👁 مشاهدة الدرجه';
+            btnView.title = 'يفتح الصورة في تبويب جديد';
+            const btnDown = document.createElement('button');
+            btnDown.type = 'button';
+            btnDown.style.display = 'inline-block';
+            btnDown.style.padding = '12px 20px';
+            btnDown.style.background = '#198754';
+            btnDown.style.color = '#fff';
+            btnDown.style.border = 'none';
+            btnDown.style.borderRadius = '8px';
+            btnDown.style.textDecoration = 'none';
+            btnDown.style.fontWeight = 'bold';
+            btnDown.style.cursor = 'pointer';
+            btnDown.style.fontFamily = 'inherit';
+            btnDown.style.fontSize = '1rem';
+            btnDown.textContent = '⬇ تحميل مباشر';
+            btnDown.title = 'تحميل الصورة على جهازك';
+            btnDown.onclick = function() {
+              const label = btnDown.textContent;
+              btnDown.textContent = '⏳ جاري التحميل...';
+              btnDown.disabled = true;
+              fetch(imageUrl, { mode: 'cors' })
+                .then(function(r) { return r.ok ? r.blob() : Promise.reject(new Error('فشل الجلب')); })
+                .then(function(blob) {
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = displayName || 'صورة الدرجة';
+                  a.style.display = 'none';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  btnDown.textContent = '✅ تم التحميل';
+                  setTimeout(function() { btnDown.textContent = label; btnDown.disabled = false; }, 1500);
+                })
+                .catch(function() {
+                  btnDown.textContent = label;
+                  btnDown.disabled = false;
+                  window.open(imageUrl, '_blank');
+                  alert('لم يتم التحميل تلقائياً (قيود المتصفح). تم فتح الصورة في تبويب جديد — يمكنك الضغط بالزر الأيمن واختيار "حفظ الصورة باسم".');
+                });
+            };
+            btnWrap.appendChild(btnView);
+            btnWrap.appendChild(btnDown);
             div.appendChild(titleDiv);
-            div.appendChild(linkWrapper);
+            div.appendChild(btnWrap);
         } else {
             const pre = document.createElement('pre'); pre.textContent = textContent;
             div.appendChild(pre);

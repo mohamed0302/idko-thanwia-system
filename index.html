@@ -269,7 +269,7 @@
       <header class="head">
         <div class="title">مدرسة إدكو الثانويه بنين — بوابة ولي الأمر</div>
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="text-align:left;color:var(--muted);font-size:0.95rem">اعرف غياب ودرجات ابنتك في المدرسة من خلال كود الطالبه </div>
+          <div style="text-align:left;color:var(--muted);font-size:0.95rem">اعرف غياب ودرجات ابنك في المدرسة من خلال كود الطالب </div>
           <!-- LinkedIn icon: ضع رابط صفحتك في href لإظهار صفحة المبرمج -->
           <a id="linkedin-link" href="https://www.linkedin.com/in/mohamed-kassem-3a37b9375?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" target="_blank" rel="noopener" title="صفحة المبرمج على لينكدإن" style="display:inline-flex;align-items:center;padding:8px;border-radius:8px;border:1.8px solid blue;text-decoration:none">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -371,6 +371,11 @@
     const avatarEl = document.getElementById('student-avatar');
     const panels = document.querySelectorAll('.panel');
     let currentRef = null;
+    let currentStudentCode = null;
+    // تخزين مؤقت لبيانات الطلاب في الجلسة لتقليل قراءات Firebase
+    const studentDataCache = {};
+    const IMG_CACHE_PREFIX = 'gradeImg_';
+    const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 ساعة
 
     // تبويب
     document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -405,6 +410,7 @@
         const date = item.timestamp ? new Date(item.timestamp) : new Date();
         t.textContent = `تاريخ الإرسال: ${date.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})}`;
 
+        // صور الدرجات: الأخف على Firebase = IMG_URL (رابط خارجي)، ثم IMG_REF (تحميل عند الطلب)، وأثقلها IMG_B64_V1 (base64 داخل البيانات).
         // Check for Image Format: IMG_B64_V1:{filename}:{base64}
         if (typeof textContent === 'string' && textContent.startsWith('IMG_B64_V1:')) {
             const parts = textContent.split(':');
@@ -529,6 +535,37 @@
             btnWrap.appendChild(btnDown);
             div.appendChild(titleDiv);
             div.appendChild(btnWrap);
+        } else if (typeof textContent === 'string' && textContent.startsWith('IMG_REF:')) {
+            // صور مُحمّلة عند الطلب فقط — لا تُجلب من Firebase إلا عند النقر (لتخفيف الحمل)
+            const rest = textContent.slice('IMG_REF:'.length);
+            const colonIdx = rest.indexOf(':');
+            const filename = rest.substring(0, colonIdx);
+            const imageId = rest.substring(colonIdx + 1).trim();
+            const titleDiv = document.createElement('div');
+            titleDiv.style.fontWeight = 'bold';
+            titleDiv.style.marginBottom = '5px';
+            titleDiv.textContent = '📄 ' + (filename || 'صورة الدرجة');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'grade-img-wrapper';
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'img-hint';
+            hintDiv.innerHTML = '🔍 اضغط لعرض الصورة (تُحمّل عند الطلب فقط — لا تُستهلك Firebase)';
+            const btnShow = document.createElement('button');
+            btnShow.type = 'button';
+            btnShow.className = 'btn btn-primary';
+            btnShow.setAttribute('data-image-id', imageId);
+            btnShow.style.marginTop = '8px';
+            btnShow.textContent = '👁 عرض الصورة';
+            btnShow.onclick = function () {
+              loadGradeImageLazy(currentStudentCode, imageId, filename, btnShow, function (imgSrc) {
+                if (imgSrc) openModal(imgSrc, filename);
+              });
+            };
+            hintDiv.onclick = function () { btnShow.click(); };
+            wrapper.appendChild(hintDiv);
+            wrapper.appendChild(btnShow);
+            div.appendChild(titleDiv);
+            div.appendChild(wrapper);
         } else {
             const pre = document.createElement('pre'); pre.textContent = textContent;
             div.appendChild(pre);
@@ -538,27 +575,42 @@
       })
     }
 
+    function applyStudentData(data) {
+      if (!data) return;
+      currentStudentCode = data._code;
+      const meta = data.meta || {};
+      nameEl.textContent = meta.الاسم || '—';
+      classEl.textContent = `الصف: ${meta.الصف || '—'} | الفصل: ${meta.الفصل || '—'}`;
+      avatarEl.textContent = (meta.الاسم ? meta.الاسم.trim()[0] : 'S');
+      renderList(data.grades, 'grades', 'لا توجد درجات مسجلة حالياً.');
+      renderList(data.absence, 'absence', 'لا يوجد غياب مسجل حالياً.');
+      renderList(data.reports, 'reports', 'لا توجد تقارير حالياً.');
+      renderList(data.messages, 'messages', 'لا توجد رسائل عامة حالياً.');
+      resultsEl.style.display = 'grid';
+      showStatus('');
+    }
+
     function attachListener(studentCode){
       if(!db){ showStatus('Firebase غير مهيأ — أضف firebaseConfig في الكود', 'red'); return }
+      currentStudentCode = studentCode;
+      if (studentDataCache[studentCode]) {
+        applyStudentData(studentDataCache[studentCode]);
+        showStatus('تم تحميل البيانات من الذاكرة المؤقتة (بدون استهلاك Firebase)', 'var(--muted)');
+        return;
+      }
       if(currentRef) currentRef.off();
       currentRef = db.ref('students/' + studentCode);
       showStatus('جاري تحميل البيانات...', 'black');
-      currentRef.on('value', snap=>{
+      currentRef.once('value').then(function(snap) {
         if(!snap.exists()){ showStatus('لم يتم العثور على طالب بهذا الكود.', 'red'); resultsEl.style.display='none'; return }
         const data = snap.val();
-        const meta = data.meta || {};
-        nameEl.textContent = meta.الاسم || '—';
-        classEl.textContent = `الصف: ${meta.الصف || '—'} | الفصل: ${meta.الفصل || '—'}`;
-        avatarEl.textContent = (meta.الاسم ? meta.الاسم.trim()[0] : 'S');
-
-        renderList(data.grades, 'grades', 'لا توجد درجات مسجلة حالياً.');
-        renderList(data.absence, 'absence', 'لا يوجد غياب مسجل حالياً.');
-        renderList(data.reports, 'reports', 'لا توجد تقارير حالياً.');
-        renderList(data.messages, 'messages', 'لا توجد رسائل عامة حالياً.');
-
-        resultsEl.style.display='grid';
-        showStatus('');
-      }, err=>{ console.error(err); showStatus('حدث خطأ أثناء الاتصال بقاعدة البيانات.', 'red') })
+        data._code = studentCode;
+        studentDataCache[studentCode] = data;
+        applyStudentData(data);
+      }).catch(function(err){
+        console.error(err);
+        showStatus('حدث خطأ أثناء الاتصال بقاعدة البيانات.', 'red');
+      });
     }
 
     searchBtn.addEventListener('click', ()=>{ const code = codeInput.value.trim(); if(!code){ showStatus('الرجاء إدخال كود الطالب.', 'red'); return } attachListener(code); })
@@ -578,6 +630,52 @@
         it.style.display = q ? (txt.includes(q) ? 'block' : 'none') : 'block';
       })
     });
+
+    // --- تحميل صور الدرجات عند الطلب فقط (تقليل استهلاك Firebase) ---
+    const imageCache = {};
+    function getImageCacheKey(code, id) { return IMG_CACHE_PREFIX + code + '_' + id; }
+    function loadGradeImageLazy(studentCode, imageId, filename, btnEl, callback) {
+      if (!studentCode || !imageId) { callback(null); return; }
+      const key = getImageCacheKey(studentCode, imageId);
+      if (imageCache[key]) { callback(imageCache[key]); return; }
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.t && (Date.now() - parsed.t) < CACHE_MAX_AGE_MS && parsed.src) {
+            imageCache[key] = parsed.src;
+            callback(parsed.src);
+            return;
+          }
+        }
+      } catch (e) { /* ignore */ }
+      if (!db) { callback(null); return; }
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ جاري التحميل...'; }
+      db.ref('students/' + studentCode + '/gradeImages/' + imageId).once('value').then(function (snap) {
+        if (!snap.exists()) { if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; } callback(null); return; }
+        let v = snap.val();
+        let imgSrc = null;
+        if (typeof v === 'string' && v.startsWith('IMG_B64_V1:')) {
+          const parts = v.split(':');
+          const fn = parts[1];
+          const b64 = v.substring(parts[0].length + parts[1].length + 2);
+          imgSrc = 'data:image/jpeg;base64,' + b64;
+        } else if (typeof v === 'string' && v.startsWith('data:')) {
+          imgSrc = v;
+        } else if (typeof v === 'string') {
+          imgSrc = 'data:image/jpeg;base64,' + v;
+        }
+        if (imgSrc) {
+          imageCache[key] = imgSrc;
+          try { localStorage.setItem(key, JSON.stringify({ src: imgSrc, t: Date.now() })); } catch (e) { /* quota */ }
+        }
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; }
+        callback(imgSrc);
+      }).catch(function () {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; }
+        callback(null);
+      });
+    }
 
     // --- Image Modal Logic ---
     const modal = document.getElementById("imgModal");

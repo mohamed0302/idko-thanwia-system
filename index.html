@@ -1,68 +1,709 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>الموقع مغلق للصيانة</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بوابة ولي الأمر — عرض الدرجات والغياب</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: "Cairo", Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #fff;
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --primary:#0b6ef6;
+      --muted:#6b7280;
+      --accent:#e9f5ff;
+      --danger:#d9534f;
+      --radius:12px;
+      --gap:14px;
+      font-size:16px;
+    }
+
+    /* Reset & base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      padding:20px;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, "Noto Naskh Arabic", sans-serif;
+      background:var(--bg);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+    }
+
+    /* Page wrapper */
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      width:100%;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 8px 28px rgba(16,24,40,0.06);
+    }
+
+    header.head{
+      display:flex;
+      gap:var(--gap);
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:18px;
+    }
+
+    header .title{
+      font-size:1.15rem;
+      font-weight:700;
+      color:var(--primary);
+      line-height:1.2;
+    }
+
+    /* Search area */
+    .search-row{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    input[type="text"].student-code{
+      width:100%;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid #e6e9ef;
+      font-size:1rem;
+      text-align:center;
+    }
+    input.student-code:focus{outline:3px solid rgba(11,110,246,0.12);border-color:var(--primary)}
+
+    .btn{
+      padding:11px 16px;
+      border-radius:10px;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+      font-size:0.98rem;
+    }
+    .btn-primary{background:var(--primary);color:white}
+    .btn-ghost{background:transparent;border:1px solid #e6e9ef;color:var(--primary)}
+
+    .status{margin-bottom:12px;text-align:center;font-weight:600}
+
+    /* layout for student + tabs */
+    .main-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:var(--gap);
+      margin-top:10px;
+    }
+
+    .student-meta{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .student-meta .left{
+      display:flex;gap:12px;align-items:center
+    }
+
+    .avatar{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(180deg,#e6f0ff,#fff);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary);
+    }
+
+    .meta-text h2{margin:0;font-size:1rem}
+    .meta-text p{margin:0;color:var(--muted);font-size:0.95rem}
+
+    /* tabs */
+    .tabs{
+      display:flex;gap:8px;flex-wrap:wrap;margin-top:12px
+    }
+    .tab-btn{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid transparent;cursor:pointer}
+    .tab-btn.active{background:var(--primary);color:white}
+
+    /* content panels */
+    .panel{display:none;margin-top:12px}
+    .panel.active{display:block}
+
+    .list-item{
+      background:#fbfdff;
+      border-radius:10px;
+      padding:14px;
+      border-left:4px solid var(--primary);
+      margin-bottom:18px; /* زيادة المسافة بين الرسائل */
+      position:relative;
+    }
+
+    /* فاصل واضح أسفل كل رسالة */
+    .list-item::after{
+      content:"";
+      display:block;
+      width:100%;
+      height:2px;
+      background:linear-gradient(to right, transparent, #d0d7e6, transparent);
+      margin-top:14px;
+      border-radius:2px;
+    }
+    .list-item pre{white-space:pre-wrap;font-family:inherit;margin:0}
+    .timestamp{font-size:0.85rem;color:var(--muted);margin-top:8px}
+
+    /* responsive columns for larger screens */
+    @media(min-width:760px){
+      .main-grid{grid-template-columns:320px 1fr}
+      .student-meta{flex-direction:column;align-items:flex-start}
+    }
+
+    @media(min-width:1024px){
+      .wrap{max-width:1100px}
+      .card{padding:22px}
+    }
+
+    /* accessibility focus */
+    button:focus, .tab-btn:focus{outline:3px solid rgba(11,110,246,0.14)}
+
+    /* --- Image Lightbox & Gallery Styles --- */
+    .grade-img-container {
+      margin-top: 10px;
+      border: 1px solid #e6e9ef;
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 200px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .grade-img-container:hover { transform: scale(1.02); border-color: var(--primary); }
+    .grade-img-thumb { width: 100%; height: auto; display: block; }
+
+    .grade-img-wrapper {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .img-hint {
+      font-size: 0.85rem;
+      color: var(--primary);
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
-      height: 100vh;
-      text-align: center;
+      gap: 4px;
+    }
+    .quick-download-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(244, 142, 8, 0.25);
+      width: 100%;
+      margin-top: 4px;
+    }
+    .quick-download-btn:hover { background-color: rgb(213, 104, 68); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(11, 110, 246, 0.35); }
+    .quick-download-btn:active { transform: translateY(0); }
+    
+    /* Modal (Lightbox) */
+    .modal {
+      display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+      width: 100%; height: 100%; overflow: auto;
+      background-color: rgba(0,0,0,0.9);
+      backdrop-filter: blur(5px);
+    }
+    .modal-content {
+      margin: auto; display: block; max-width: 90%; max-height: 85vh;
+      width: auto; height: auto; object-fit: contain;
+      border-radius: 4px; box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+    .modal-caption {
+      margin: auto; display: block; width: 80%; max-width: 700px;
+      text-align: center; color: #ccc; padding: 10px 0; height: 50px;
+    }
+    .modal-close {
+      position: absolute; top: 15px; right: 35px;
+      color: #f1f1f1; font-size: 40px; font-weight: bold;
+      transition: 0.3s; cursor: pointer;
+    }
+    .modal-close:hover, .modal-close:focus { color: #bbb; text-decoration: none; cursor: pointer; }
+    
+    .modal-controls {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 15px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: max-content;
+      max-width: 90%;
+    }
+    .modal-btn {
+      background: rgba(11, 225, 160, 0.1); color: white; border: 1px solid rgba(217, 39, 39, 0.5);
+      padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; gap: 5px; text-decoration: none;
+      white-space: nowrap;
+    }
+    .modal-btn:hover { background: rgba(219, 87, 87, 0.3); }
+
+    @media only screen and (max-width: 700px){
+      .modal-content { width: 95%; max-width: 100%; }
+      .modal-controls { bottom: 10px; gap: 10px; padding: 8px 15px; }
+      .modal-btn { padding: 6px 12px; font-size: 13px; }
     }
 
-    .container {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 40px 25px;
-      border-radius: 16px;
-      max-width: 420px;
-      width: 90%;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    }
-
-    h1 {
-      margin-bottom: 15px;
-      font-size: 28px;
-    }
-
-    p {
-      font-size: 16px;
-      line-height: 1.8;
-      opacity: 0.9;
-    }
-
-    .footer {
-      margin-top: 30px;
-      font-size: 14px;
-      opacity: 0.7;
-    }
-
-    .footer span {
-      color: #4fc3f7;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>الموقع مغلق مؤقتًا</h1>
-    <p>
-      نعمل حاليًا على تنفيذ بعض أعمال الصيانة والتحديثات  
-      لتحسين الأداء وتقديم تجربة أفضل.
-      <br>
-      يرجى المحاولة مرة أخرى لاحقًا.
-    </p>
+  <div class="wrap">
+    <div class="card">
+      <header class="head">
+        <div class="title">مدرسة إدكو الثانويه بنين — بوابة ولي الأمر</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="text-align:left;color:var(--muted);font-size:0.95rem">اعرف غياب ودرجات ابنتك في المدرسة من خلال كود الطالبه </div>
+          <!-- LinkedIn icon: ضع رابط صفحتك في href لإظهار صفحة المبرمج -->
+          <a id="linkedin-link" href="https://www.linkedin.com/in/mohamed-kassem-3a37b9375?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" target="_blank" rel="noopener" title="صفحة المبرمج على لينكدإن" style="display:inline-flex;align-items:center;padding:8px;border-radius:8px;border:1.8px solid blue;text-decoration:none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.98 3.5C4.98 4.88 3.86 6 2.48 6C1.1 6 0 4.88 0 3.5C0 2.12 1.12 1 2.5 1C3.88 1 4.98 2.12 4.98 3.5Z" transform="translate(3 4)" fill="#0A66C2"></path>
+              <path d="M6 8H2V20H6V8Z" transform="translate(3 3)" fill="#0A66C2"></path>
+              <path d="M10 8H7V20H10V14.5C10 12 16 11.5 16 16V20H20V14C20 8 13 7.5 10 10.5V8Z" transform="translate(1 2)" fill="#0A66C2"></path>
+            </svg>
+            <span style="font-size:0.9rem;color:var(--primary);font-weight:600;margin-right:6px">المطور : محمد إيهاب قاسم </span>
+          </a>
+        </div>
+      </header>
 
-    <div class="footer">
-      تم التطوير بواسطة <span>محمد إيهاب قاسم</span>
+      <div class="search-row">
+        <input type="text" class="student-code" id="student-code" placeholder="أدخل كود الطالب هنا (اضغط Enter للبحث)">
+        <button id="search-btn" class="btn btn-primary">بحث</button>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+
+      <div class="main-grid" id="results" style="display:none">
+        <aside class="card" id="left-card">
+          <div class="student-meta">
+            <div class="left">
+              <div class="avatar" id="student-avatar">S</div>
+              <div class="meta-text">
+                <h2 id="student-name">—</h2>
+                <p id="student-class">الصف — | الفصل —</p>
+              </div>
+            </div>
+            <div style="text-align:left">
+              <button id="select-all" class="btn btn-ghost" title="تحديد كل الرسائل">تحديد الكل</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div style="font-weight:700;margin-bottom:8px">البحث داخل الرسائل</div>
+            <input id="global-search" type="text" placeholder="ابحث عن نص داخل الرسائل" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;text-align:center">
+          </div>
+        </aside>
+
+        <section>
+          <div class="tabs" role="tablist" aria-label="أقسام الطالب">
+            <button class="tab-btn active" data-target="grades">الدرجات</button>
+            <button class="tab-btn" data-target="absence">الغياب</button>
+            <button class="tab-btn" data-target="reports">التقارير</button>
+            <button class="tab-btn" data-target="messages">رسائل عامة</button>
+          </div>
+
+          <div id="grades" class="panel active"></div>
+          <div id="absence" class="panel"></div>
+          <div id="reports" class="panel"></div>
+          <div id="messages" class="panel"></div>
+        </section>
+      </div>
+
+      <p style="margin-top:14px;color:var(--muted);font-size:0.95rem">ملاحظه : اي خطا في البيانات الرجاء الرجوء لادارة المدرسه </p>
     </div>
   </div>
+
+  <!-- Image Modal -->
+  <div id="imgModal" class="modal">
+    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="img01">
+    <div id="caption" class="modal-caption"></div>
+    <div class="modal-controls">
+      <a id="downloadBtn" class="modal-btn" href="#" download style="background: rgba(219, 87, 87, 0.3);">⬇ تحميل الصورة</a>
+      <button class="modal-btn" onclick="zoomIn()">🔍 تكبير</button>
+      <button class="modal-btn" onclick="zoomOut()">➖ تصغير</button>
+    </div>
+  </div>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <script>
+    // ضع إعدادات firebaseConfig هنا
+    const firebaseConfig = {
+  apiKey: "AIzaSyDzgVtIJS6csli3v9eyeEzi05mAEWskKTk",
+  authDomain: "thanwia2.firebaseapp.com",
+  databaseURL: "https://thanwia2-default-rtdb.firebaseio.com",
+  projectId: "thanwia2",
+  storageBucket: "thanwia2.firebasestorage.app",
+  messagingSenderId: "466002045989",
+  appId: "1:466002045989:web:9237f6f2b1705fce6a63cc"
+};
+
+    // init
+    try{firebase.initializeApp(firebaseConfig);}catch(e){/* ignore if already init */}
+    const db = firebase.database ? firebase.database() : null;
+
+    // عناصر DOM
+    const searchBtn = document.getElementById('search-btn');
+    const codeInput = document.getElementById('student-code');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const nameEl = document.getElementById('student-name');
+    const classEl = document.getElementById('student-class');
+    const avatarEl = document.getElementById('student-avatar');
+    const panels = document.querySelectorAll('.panel');
+    let currentRef = null;
+    let currentStudentCode = null;
+    // تخزين مؤقت لبيانات الطلاب في الجلسة لتقليل قراءات Firebase
+    const studentDataCache = {};
+    const IMG_CACHE_PREFIX = 'gradeImg_';
+    const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 ساعة
+
+    // تبويب
+    document.querySelectorAll('.tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        panels.forEach(p=>p.classList.remove('active'));
+        const t = document.getElementById(btn.dataset.target);
+        if(t) t.classList.add('active');
+      })
+    })
+
+    // البحث
+    function showStatus(text,color=''){
+      statusEl.textContent = text;
+      statusEl.style.color = color||'';
+    }
+
+    function clearPanels(){panels.forEach(p=>p.innerHTML='');}
+
+    function renderList(data, containerId, emptyMessage){
+      const node = document.getElementById(containerId);
+      node.innerHTML='';
+      if(!data){ node.innerHTML = `<div style='color:var(--muted)'>${emptyMessage}</div>`; return }
+      const keys = Object.keys(data).reverse();
+      keys.forEach(k=>{
+        const item = data[k];
+        const textContent = item.text || item.msg || JSON.stringify(item);
+        const div = document.createElement('div'); div.className='list-item';
+        
+        const t = document.createElement('div'); t.className='timestamp';
+        const date = item.timestamp ? new Date(item.timestamp) : new Date();
+        t.textContent = `تاريخ الإرسال: ${date.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})}`;
+
+        // صور الدرجات: الأخف على Firebase = IMG_URL (رابط خارجي)، ثم IMG_REF (تحميل عند الطلب)، وأثقلها IMG_B64_V1 (base64 داخل البيانات).
+        // Check for Image Format: IMG_B64_V1:{filename}:{base64}
+        if (typeof textContent === 'string' && textContent.startsWith('IMG_B64_V1:')) {
+            const parts = textContent.split(':');
+            // parts[0] is prefix, parts[1] is filename, parts[2] is base64 (might contain colons if data uri)
+            // Safely reconstruct base64 part
+            const filename = parts[1];
+            const base64Data = textContent.substring(parts[0].length + parts[1].length + 2);
+            const imgSrc = `data:image/jpeg;base64,${base64Data}`;
+
+            // [تعديل] إنشاء العناصر برمجياً لتجنب مشاكل النصوص الطويلة على الجوال
+            const titleDiv = document.createElement('div');
+            titleDiv.style.fontWeight = 'bold';
+            titleDiv.style.marginBottom = '5px';
+            titleDiv.textContent = `📄 ${filename}`;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'grade-img-wrapper';
+
+            // Hint text
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'img-hint';
+            hintDiv.innerHTML = '🔍 اضغط على الصورة للتكبير';
+            hintDiv.onclick = function() { openModal(imgSrc, filename); };
+
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'grade-img-container';
+            
+            const imgThumb = document.createElement('img');
+            imgThumb.src = imgSrc;
+            imgThumb.className = 'grade-img-thumb';
+            imgThumb.alt = filename;
+            imgThumb.loading = 'lazy';
+
+            imgContainer.appendChild(imgThumb);
+            imgContainer.onclick = function() { openModal(imgSrc, filename); };
+
+            // Quick Download Button
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imgSrc;
+            downloadLink.download = filename;
+            downloadLink.className = 'quick-download-btn';
+            downloadLink.innerHTML = '⬇ تحميل سريع';
+
+            wrapper.appendChild(hintDiv);
+            wrapper.appendChild(imgContainer);
+            wrapper.appendChild(downloadLink);
+
+            div.appendChild(titleDiv);
+            div.appendChild(wrapper);
+        } else if (typeof textContent === 'string' && textContent.startsWith('IMG_URL:')) {
+            // روابط صور خارجية (مثل GitHub): زر مشاهدة + زر تحميل مباشر
+            const rest = textContent.slice('IMG_URL:'.length);
+            const colonIdx = rest.indexOf(':');
+            const displayName = rest.substring(0, colonIdx);
+            const imageUrl = rest.substring(colonIdx + 1).trim();
+            const titleDiv = document.createElement('div');
+            titleDiv.style.fontWeight = 'bold';
+            titleDiv.style.marginBottom = '10px';
+            titleDiv.textContent = displayName ? `📄 ${displayName}` : '📷 صورة الدرجة';
+            const btnWrap = document.createElement('div');
+            btnWrap.className = 'grade-img-wrapper';
+            btnWrap.style.display = 'flex';
+            btnWrap.style.gap = '12px';
+            btnWrap.style.flexWrap = 'wrap';
+            btnWrap.style.marginBottom = '8px';
+            const btnView = document.createElement('a');
+            btnView.href = imageUrl;
+            btnView.target = '_blank';
+            btnView.rel = 'noopener noreferrer';
+            btnView.className = 'grade-direct-link';
+            btnView.style.display = 'inline-block';
+            btnView.style.padding = '12px 20px';
+            btnView.style.background = 'var(--primary, #0d6efd)';
+            btnView.style.color = '#fff';
+            btnView.style.borderRadius = '8px';
+            btnView.style.textDecoration = 'none';
+            btnView.style.fontWeight = 'bold';
+            btnView.textContent = '👁 مشاهدة الدرجه';
+            btnView.title = 'يفتح الصورة في تبويب جديد';
+            const btnDown = document.createElement('button');
+            btnDown.type = 'button';
+            btnDown.style.display = 'inline-block';
+            btnDown.style.padding = '12px 20px';
+            btnDown.style.background = '#198754';
+            btnDown.style.color = '#fff';
+            btnDown.style.border = 'none';
+            btnDown.style.borderRadius = '8px';
+            btnDown.style.textDecoration = 'none';
+            btnDown.style.fontWeight = 'bold';
+            btnDown.style.cursor = 'pointer';
+            btnDown.style.fontFamily = 'inherit';
+            btnDown.style.fontSize = '1rem';
+            btnDown.textContent = '⬇ تحميل مباشر';
+            btnDown.title = 'تحميل الصورة على جهازك';
+            btnDown.onclick = function() {
+              const label = btnDown.textContent;
+              btnDown.textContent = '⏳ جاري التحميل...';
+              btnDown.disabled = true;
+              fetch(imageUrl, { mode: 'cors' })
+                .then(function(r) { return r.ok ? r.blob() : Promise.reject(new Error('فشل الجلب')); })
+                .then(function(blob) {
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = displayName || 'صورة الدرجة';
+                  a.style.display = 'none';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  btnDown.textContent = '✅ تم التحميل';
+                  setTimeout(function() { btnDown.textContent = label; btnDown.disabled = false; }, 1500);
+                })
+                .catch(function() {
+                  btnDown.textContent = label;
+                  btnDown.disabled = false;
+                  window.open(imageUrl, '_blank');
+                  alert('لم يتم التحميل تلقائياً (قيود المتصفح). تم فتح الصورة في تبويب جديد — يمكنك الضغط بالزر الأيمن واختيار "حفظ الصورة باسم".');
+                });
+            };
+            btnWrap.appendChild(btnView);
+            btnWrap.appendChild(btnDown);
+            div.appendChild(titleDiv);
+            div.appendChild(btnWrap);
+        } else if (typeof textContent === 'string' && textContent.startsWith('IMG_REF:')) {
+            // صور مُحمّلة عند الطلب فقط — لا تُجلب من Firebase إلا عند النقر (لتخفيف الحمل)
+            const rest = textContent.slice('IMG_REF:'.length);
+            const colonIdx = rest.indexOf(':');
+            const filename = rest.substring(0, colonIdx);
+            const imageId = rest.substring(colonIdx + 1).trim();
+            const titleDiv = document.createElement('div');
+            titleDiv.style.fontWeight = 'bold';
+            titleDiv.style.marginBottom = '5px';
+            titleDiv.textContent = '📄 ' + (filename || 'صورة الدرجة');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'grade-img-wrapper';
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'img-hint';
+            hintDiv.innerHTML = '🔍 اضغط لعرض الصورة (تُحمّل عند الطلب فقط — لا تُستهلك Firebase)';
+            const btnShow = document.createElement('button');
+            btnShow.type = 'button';
+            btnShow.className = 'btn btn-primary';
+            btnShow.setAttribute('data-image-id', imageId);
+            btnShow.style.marginTop = '8px';
+            btnShow.textContent = '👁 عرض الصورة';
+            btnShow.onclick = function () {
+              loadGradeImageLazy(currentStudentCode, imageId, filename, btnShow, function (imgSrc) {
+                if (imgSrc) openModal(imgSrc, filename);
+              });
+            };
+            hintDiv.onclick = function () { btnShow.click(); };
+            wrapper.appendChild(hintDiv);
+            wrapper.appendChild(btnShow);
+            div.appendChild(titleDiv);
+            div.appendChild(wrapper);
+        } else {
+            const pre = document.createElement('pre'); pre.textContent = textContent;
+            div.appendChild(pre);
+        }
+        
+        div.appendChild(t); node.appendChild(div);
+      })
+    }
+
+    function applyStudentData(data) {
+      if (!data) return;
+      currentStudentCode = data._code;
+      const meta = data.meta || {};
+      nameEl.textContent = meta.الاسم || '—';
+      classEl.textContent = `الصف: ${meta.الصف || '—'} | الفصل: ${meta.الفصل || '—'}`;
+      avatarEl.textContent = (meta.الاسم ? meta.الاسم.trim()[0] : 'S');
+      renderList(data.grades, 'grades', 'لا توجد درجات مسجلة حالياً.');
+      renderList(data.absence, 'absence', 'لا يوجد غياب مسجل حالياً.');
+      renderList(data.reports, 'reports', 'لا توجد تقارير حالياً.');
+      renderList(data.messages, 'messages', 'لا توجد رسائل عامة حالياً.');
+      resultsEl.style.display = 'grid';
+      showStatus('');
+    }
+
+    function attachListener(studentCode){
+      if(!db){ showStatus('Firebase غير مهيأ — أضف firebaseConfig في الكود', 'red'); return }
+      currentStudentCode = studentCode;
+      if (studentDataCache[studentCode]) {
+        applyStudentData(studentDataCache[studentCode]);
+        showStatus('تم تحميل البيانات من الذاكرة المؤقتة (بدون استهلاك Firebase)', 'var(--muted)');
+        return;
+      }
+      if(currentRef) currentRef.off();
+      currentRef = db.ref('students/' + studentCode);
+      showStatus('جاري تحميل البيانات...', 'black');
+      currentRef.once('value').then(function(snap) {
+        if(!snap.exists()){ showStatus('لم يتم العثور على طالب بهذا الكود.', 'red'); resultsEl.style.display='none'; return }
+        const data = snap.val();
+        data._code = studentCode;
+        studentDataCache[studentCode] = data;
+        applyStudentData(data);
+      }).catch(function(err){
+        console.error(err);
+        showStatus('حدث خطأ أثناء الاتصال بقاعدة البيانات.', 'red');
+      });
+    }
+
+    searchBtn.addEventListener('click', ()=>{ const code = codeInput.value.trim(); if(!code){ showStatus('الرجاء إدخال كود الطالب.', 'red'); return } attachListener(code); })
+    codeInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); searchBtn.click(); } })
+
+    // تحسينات اختيارية
+    document.getElementById('select-all').addEventListener('click', ()=>{
+      // مثال: يميز كل العناصر (يمكنك تعديل لتفعيل إرسال أو نسخ)
+      document.querySelectorAll('.list-item').forEach(it=>it.style.backgroundColor='#fff8e6');
+    })
+
+    // بحث داخل الرسائل
+    document.getElementById('global-search').addEventListener('input', (e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('.list-item').forEach(it=>{
+        const txt = it.innerText.toLowerCase();
+        it.style.display = q ? (txt.includes(q) ? 'block' : 'none') : 'block';
+      })
+    });
+
+    // --- تحميل صور الدرجات عند الطلب فقط (تقليل استهلاك Firebase) ---
+    const imageCache = {};
+    function getImageCacheKey(code, id) { return IMG_CACHE_PREFIX + code + '_' + id; }
+    function loadGradeImageLazy(studentCode, imageId, filename, btnEl, callback) {
+      if (!studentCode || !imageId) { callback(null); return; }
+      const key = getImageCacheKey(studentCode, imageId);
+      if (imageCache[key]) { callback(imageCache[key]); return; }
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.t && (Date.now() - parsed.t) < CACHE_MAX_AGE_MS && parsed.src) {
+            imageCache[key] = parsed.src;
+            callback(parsed.src);
+            return;
+          }
+        }
+      } catch (e) { /* ignore */ }
+      if (!db) { callback(null); return; }
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ جاري التحميل...'; }
+      db.ref('students/' + studentCode + '/gradeImages/' + imageId).once('value').then(function (snap) {
+        if (!snap.exists()) { if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; } callback(null); return; }
+        let v = snap.val();
+        let imgSrc = null;
+        if (typeof v === 'string' && v.startsWith('IMG_B64_V1:')) {
+          const parts = v.split(':');
+          const fn = parts[1];
+          const b64 = v.substring(parts[0].length + parts[1].length + 2);
+          imgSrc = 'data:image/jpeg;base64,' + b64;
+        } else if (typeof v === 'string' && v.startsWith('data:')) {
+          imgSrc = v;
+        } else if (typeof v === 'string') {
+          imgSrc = 'data:image/jpeg;base64,' + v;
+        }
+        if (imgSrc) {
+          imageCache[key] = imgSrc;
+          try { localStorage.setItem(key, JSON.stringify({ src: imgSrc, t: Date.now() })); } catch (e) { /* quota */ }
+        }
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; }
+        callback(imgSrc);
+      }).catch(function () {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '👁 عرض الصورة'; }
+        callback(null);
+      });
+    }
+
+    // --- Image Modal Logic ---
+    const modal = document.getElementById("imgModal");
+    const modalImg = document.getElementById("img01");
+    const captionText = document.getElementById("caption");
+    const downloadBtn = document.getElementById("downloadBtn");
+    let currentZoom = 1;
+
+    function openModal(src, alt) {
+      modal.style.display = "block";
+      modalImg.src = src;
+      captionText.innerHTML = alt;
+      downloadBtn.href = src;
+      downloadBtn.download = alt;
+      currentZoom = 1;
+      modalImg.style.transform = `scale(${currentZoom})`;
+    }
+
+    function closeModal() { modal.style.display = "none"; }
+    
+    function zoomIn() {
+      currentZoom += 0.2;
+      modalImg.style.transform = `scale(${currentZoom})`;
+    }
+    function zoomOut() {
+      if(currentZoom > 0.4) currentZoom -= 0.2;
+      modalImg.style.transform = `scale(${currentZoom})`;
+    }
+  </script>
 </body>
 </html>
